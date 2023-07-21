@@ -13,17 +13,6 @@ func BenchmarkTreeTest(b *testing.B) {
 	}
 }
 
-func BenchmarkWhiteListTest(b *testing.B) {
-	filter := New(ipAddresses...)
-
-	b.ResetTimer()
-	b.ReportAllocs()
-
-	for n := 0; n < b.N; n++ {
-		_ = filter.Remove("3.239.232.0/24") // "104.255.59.103", "15.230.39.172/31", "13.108.0.0/14"
-	}
-}
-
 var ipAddresses = []string{
 	"13.34.37.64/27",
 	"52.93.153.170/32",

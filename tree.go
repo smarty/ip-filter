@@ -6,8 +6,9 @@ import (
 )
 
 type treeNode struct {
-	children []*treeNode
-	isBanned bool
+	children     []*treeNode
+	isIPv4Banned bool
+	isIPv6Banned bool
 }
 
 func New(addresses ...string) Filter {
@@ -24,22 +25,26 @@ func newNode() *treeNode {
 }
 
 func (this *treeNode) add(subnetMask string) {
-	if len(subnetMask) == 0 {
+	if strings.Contains(subnetMask, ":") {
+		this.addIPv6(subnetMask)
+	} else {
+		this.addIPv4(subnetMask)
+	}
+}
+func (this *treeNode) addIPv4(subnetMask string) {
+	var numericIP uint32
+
+	subnetBits, baseIPAddress := prepareBaseIPAndSubnetMask(subnetMask)
+	if subnetBits == 0 || len(baseIPAddress) == 0 {
 		return
 	}
 
-	index := strings.Index(subnetMask, subnetMaskSeparator)
-	if index == -1 {
-		return
-	}
-
-	subnetBits, _ := strconv.Atoi(subnetMask[index+1:])
-	baseIPAddress := subnetMask[:index]
 	if !isNumeric(baseIPAddress) {
 		return
 	}
 
-	numericIP := parseIPAddress(baseIPAddress)
+	numericIP = parseIPv4Address(baseIPAddress)
+
 	if numericIP == 0 {
 		return
 	}
@@ -56,7 +61,58 @@ func (this *treeNode) add(subnetMask string) {
 		current = child
 	}
 
-	current.isBanned = true
+	current.isIPv4Banned = true
+}
+func (this *treeNode) addIPv6(subnetMask string) {
+	var numericIP uint64
+
+	subnetBits, baseIPAddress := prepareBaseIPAndSubnetMask(subnetMask)
+	if subnetBits == 0 || len(baseIPAddress) == 0 {
+		return
+	}
+
+	if !containsValidHexValues(baseIPAddress) {
+		return
+	}
+
+	numericIP = parseIPv6Address(baseIPAddress)
+
+	if numericIP == 0 {
+		return
+	}
+
+	if subnetBits > 64 {
+		subnetBits = 64
+	}
+
+	current := this
+	for i := 0; i < subnetBits; i++ {
+		nextBit := uint32(numericIP << i >> ipv6BitMask)
+		child := current.children[nextBit]
+
+		if child == nil {
+			child = newNode()
+			current.children[nextBit] = child
+		}
+		current = child
+	}
+
+	current.isIPv6Banned = true
+}
+
+func prepareBaseIPAndSubnetMask(subnetMask string) (int, string) {
+	if len(subnetMask) == 0 {
+		return 0, ""
+	}
+
+	index := strings.Index(subnetMask, subnetMaskSeparator)
+	if index == -1 {
+		return 0, ""
+	}
+
+	subnetBits, _ := strconv.Atoi(subnetMask[index+1:])
+	baseIPAddress := subnetMask[:index]
+	return subnetBits, baseIPAddress
 }
 func isNumeric(value string) bool {
 	for _, character := range value {
@@ -67,35 +123,15 @@ func isNumeric(value string) bool {
 
 	return true
 }
-
-func (this *treeNode) Contains(ipAddress string) bool {
-	if len(ipAddress) == 0 {
-		return false
-	}
-
-	var numericIP uint32
-	if numericIP = parseIPAddress(ipAddress); numericIP == 0 {
-		return false
-	}
-
-	current := this
-	for i := 0; i < ipv4BitCount; i++ {
-		nextBit := uint32(numericIP << i >> ipv4BitMask)
-		child := current.children[nextBit]
-
-		if child == nil {
+func containsValidHexValues(value string) bool {
+	for _, character := range value {
+		if !(character >= '0' && character <= '9' || character >= 'a' && character <= 'f' || character >= 'A' && character <= 'F' || character == ipv6Separator) {
 			return false
 		}
-
-		current = child
-		if current.isBanned {
-			return true
-		}
 	}
-
-	return false
+	return true
 }
-func parseIPAddress(value string) uint32 {
+func parseIPv4Address(value string) uint32 {
 	var numericIP uint32
 	var count int
 
@@ -134,6 +170,105 @@ func parseIPAddress(value string) uint32 {
 
 	return numericIP
 }
+func parseIPv6Address(value string) uint64 {
+	var numericIP uint64
+	var count int
+
+	for i := 0; i < duotrigesimalSectionCount; i++ {
+		var fragment uint64
+		var index int
+
+		for x := range value {
+			if value[x] != ipv6Separator {
+				continue
+			}
+
+			index = x
+			count++
+			break
+		}
+
+		if index > 0 {
+			fragment, _ = strconv.ParseUint(value[:index], 16, 64)
+			value = value[index+1:]
+		} else {
+			fragment = 0
+		}
+
+		numericIP = numericIP << duotrigesimalBitCount
+		numericIP += fragment
+	}
+
+	return numericIP
+}
+
+func (this *treeNode) Contains(ipAddress string) bool {
+	if len(ipAddress) == 0 {
+		return false
+	}
+
+	if strings.Contains(ipAddress, ":") {
+		return this.containsIPv6(ipAddress)
+	} else {
+		return this.containsIPv4(ipAddress)
+	}
+}
+func (this *treeNode) containsIPv4(ipAddress string) bool {
+	var numericIP uint32
+
+	numericIP = parseIPv4Address(ipAddress)
+
+	if numericIP == 0 {
+		return false
+	}
+
+	current := this
+	for i := 0; i < ipv4BitCount; i++ {
+		nextBit := uint32(numericIP << i >> ipv4BitMask)
+		child := current.children[nextBit]
+
+		if child == nil {
+			return false
+		}
+
+		current = child
+		if current.isIPv4Banned {
+			return true
+		}
+	}
+
+	return false
+}
+func (this *treeNode) containsIPv6(ipAddress string) bool {
+	var numericIP uint64
+
+	numericIP = parseIPv6Address(ipAddress)
+
+	if !containsValidHexValues(ipAddress) {
+		return false
+	}
+
+	if numericIP == 0 {
+		return false
+	}
+
+	current := this
+	for i := 0; i < ipv6BitCount; i++ {
+		nextBit := uint32(numericIP << i >> ipv6BitMask)
+		child := current.children[nextBit]
+
+		if child == nil {
+			return false
+		}
+
+		current = child
+		if current.isIPv6Banned {
+			return true
+		}
+	}
+
+	return false
+}
 
 const (
 	decimalNumber       = 10
@@ -144,4 +279,11 @@ const (
 	octetCount          = 4
 	octetSeparator      = '.'
 	subnetMaskSeparator = "/"
+
+	// we only care about the first 64 bits for ipv6
+	duotrigesimalSectionCount = 2
+	duotrigesimalBitCount     = 32
+	ipv6Separator             = ':'
+	ipv6BitCount              = 64
+	ipv6BitMask               = ipv6BitCount - 1
 )

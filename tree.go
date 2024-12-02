@@ -244,10 +244,6 @@ func (this *treeNode) containsIPv6(ipAddress string) bool {
 
 	numericIP = parseIPv6Address(ipAddress)
 
-	if !containsValidHexValues(ipAddress) {
-		return false
-	}
-
 	if numericIP == 0 {
 		return false
 	}

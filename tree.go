@@ -228,7 +228,7 @@ func (this *treeNode) containsIPv4(ipAddress string) bool {
 		child := current.children[nextBit]
 
 		if child == nil {
-			return false
+			break
 		}
 
 		current = child
@@ -254,7 +254,7 @@ func (this *treeNode) containsIPv6(ipAddress string) bool {
 		child := current.children[nextBit]
 
 		if child == nil {
-			return false
+			break
 		}
 
 		current = child

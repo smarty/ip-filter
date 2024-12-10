@@ -6,13 +6,14 @@ import (
 )
 
 type treeNode struct {
-	children     []*treeNode
-	isIPv4Banned bool
-	isIPv6Banned bool
+	children []*treeNode
+	banned   bool
 }
 
 func New(addresses ...string) Filter {
 	this := newNode()
+	this.children[0] = newNode() // ipv4 tree
+	this.children[1] = newNode() // ipv6 tree
 
 	for _, item := range addresses {
 		this.add(item)
@@ -49,7 +50,7 @@ func (this *treeNode) addIPv4(subnetMask string) {
 		return
 	}
 
-	current := this
+	current := this.children[0]
 	for i := 0; i < subnetBits; i++ {
 		nextBit := uint32(numericIP << i >> ipv4BitMask)
 		child := current.children[nextBit]
@@ -61,7 +62,7 @@ func (this *treeNode) addIPv4(subnetMask string) {
 		current = child
 	}
 
-	current.isIPv4Banned = true
+	current.banned = true
 }
 func (this *treeNode) addIPv6(subnetMask string) {
 	var numericIP uint64
@@ -85,7 +86,7 @@ func (this *treeNode) addIPv6(subnetMask string) {
 		subnetBits = 64
 	}
 
-	current := this
+	current := this.children[1]
 	for i := 0; i < subnetBits; i++ {
 		nextBit := uint32(numericIP << i >> ipv6BitMask)
 		child := current.children[nextBit]
@@ -97,7 +98,7 @@ func (this *treeNode) addIPv6(subnetMask string) {
 		current = child
 	}
 
-	current.isIPv6Banned = true
+	current.banned = true
 }
 
 func prepareBaseIPAndSubnetMask(subnetMask string) (int, string) {
@@ -222,7 +223,7 @@ func (this *treeNode) containsIPv4(ipAddress string) bool {
 		return false
 	}
 
-	current := this
+	current := this.children[0]
 	for i := 0; i < ipv4BitCount; i++ {
 		nextBit := uint32(numericIP << i >> ipv4BitMask)
 		child := current.children[nextBit]
@@ -232,7 +233,7 @@ func (this *treeNode) containsIPv4(ipAddress string) bool {
 		}
 
 		current = child
-		if current.isIPv4Banned {
+		if current.banned {
 			return true
 		}
 	}
@@ -248,7 +249,7 @@ func (this *treeNode) containsIPv6(ipAddress string) bool {
 		return false
 	}
 
-	current := this
+	current := this.children[1]
 	for i := 0; i < ipv6BitCount; i++ {
 		nextBit := uint32(numericIP << i >> ipv6BitMask)
 		child := current.children[nextBit]
@@ -258,7 +259,7 @@ func (this *treeNode) containsIPv6(ipAddress string) bool {
 		}
 
 		current = child
-		if current.isIPv6Banned {
+		if current.banned {
 			return true
 		}
 	}

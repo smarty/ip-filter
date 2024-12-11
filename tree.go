@@ -12,8 +12,8 @@ type treeNode struct {
 
 func New(addresses ...string) Filter {
 	this := newNode()
-	this.children[0] = newNode() // ipv4 tree
-	this.children[1] = newNode() // ipv6 tree
+	this.children[ipv4Child] = newNode()
+	this.children[ipv6Child] = newNode()
 
 	for _, item := range addresses {
 		this.add(item)
@@ -86,7 +86,7 @@ func (this *treeNode) addIPv6(subnetMask string) {
 		subnetBits = 64
 	}
 
-	current := this.children[1]
+	current := this.children[ipv6Child]
 	for i := 0; i < subnetBits; i++ {
 		nextBit := uint32(numericIP << i >> ipv6BitMask)
 		child := current.children[nextBit]
@@ -223,7 +223,7 @@ func (this *treeNode) containsIPv4(ipAddress string) bool {
 		return false
 	}
 
-	current := this.children[0]
+	current := this.children[ipv4Child]
 	for i := 0; i < ipv4BitCount; i++ {
 		nextBit := uint32(numericIP << i >> ipv4BitMask)
 		child := current.children[nextBit]
@@ -283,4 +283,7 @@ const (
 	ipv6Separator             = ':'
 	ipv6BitCount              = 64
 	ipv6BitMask               = ipv6BitCount - 1
+
+	ipv4Child = 0
+	ipv6Child = 1
 )

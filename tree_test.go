@@ -120,7 +120,7 @@ func TestAddIPv6WithSubnetLargerThan64(t *testing.T) {
 	assertContains(t, filter, "2a01:578:0:7301::1")
 }
 func TestAddIPv6WithSubnetOf32(t *testing.T) {
-	filter := New("2a01:::::/32")
+	filter := New("2a01:578::::/32")
 	assertContains(t, filter, "2a01:578:0:7301::1")
 }
 func TestFindIPv6AndIPv4InNetwork(t *testing.T) {

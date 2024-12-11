@@ -175,7 +175,7 @@ func parseIPv6Address(value string) uint64 {
 	var numericIP uint64
 	var count int
 
-	for i := 0; i < duotrigesimalSectionCount; i++ {
+	for i := 0; i < hexadecimalSectionCount; i++ {
 		var fragment uint64
 		var index int
 
@@ -196,7 +196,7 @@ func parseIPv6Address(value string) uint64 {
 			fragment = 0
 		}
 
-		numericIP = numericIP << duotrigesimalBitCount
+		numericIP = numericIP << hexadecimalBitCount
 		numericIP += fragment
 	}
 
@@ -278,11 +278,11 @@ const (
 	subnetMaskSeparator = "/"
 
 	// we only care about the first 64 bits for ipv6
-	duotrigesimalSectionCount = 2
-	duotrigesimalBitCount     = 32
-	ipv6Separator             = ':'
-	ipv6BitCount              = 64
-	ipv6BitMask               = ipv6BitCount - 1
+	hexadecimalSectionCount = 4
+	hexadecimalBitCount     = 16
+	ipv6Separator           = ':'
+	ipv6BitCount            = 64
+	ipv6BitMask             = ipv6BitCount - 1
 
 	ipv4Child = 0
 	ipv6Child = 1

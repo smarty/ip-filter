@@ -14,8 +14,8 @@ func TestIPv4Errors(t *testing.T) {
 		"10.0/8",
 		"10.0.0.0/8",
 		"3|144|0|0/13",
-		"0.0.0.0/10")
-
+		"0.0.0.0/10",
+	)
 	assertNotContains(t, filter,
 		"",
 		"hello, world!",
@@ -24,7 +24,8 @@ func TestIPv4Errors(t *testing.T) {
 		"10.0.0.1.1.1",
 		"10.0",
 		"3.144.124.234",
-		"0.0.0.0")
+		"0.0.0.0",
+	)
 }
 func TestIPv6Errors(t *testing.T) {
 	filter := New(
@@ -32,14 +33,15 @@ func TestIPv6Errors(t *testing.T) {
 		"2600:f0f0:2::",
 		"random name",
 		"2600:h0h0:2::/48",
-		":::::/64")
-
+		":::::/64",
+	)
 	assertNotContains(t, filter,
 		"",
 		"2600:f0f0:2::1",
 		"random name",
 		"2600:h0h0:2::",
-		"::::")
+		"::::",
+	)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -55,8 +57,8 @@ func TestFindIPv4AddressWithoutCleanNetwork(t *testing.T) {
 		"120.52.22.96/27",
 		"150.222.11.86/31",
 		"13.34.11.32/27",
-		"15.230.39.60/31")
-
+		"15.230.39.60/31",
+	)
 	assertContains(t, filter,
 		"3.144.124.234",
 		"3.5.140.28",
@@ -67,29 +69,32 @@ func TestFindIPv4AddressWithoutCleanNetwork(t *testing.T) {
 		"120.52.22.127",
 		"150.222.11.87",
 		"13.34.11.35",
-		"15.230.39.61")
+		"15.230.39.61",
+	)
 }
 func TestFindIPv4AddressWithCleanNetwork(t *testing.T) {
 	filter := New(
 		IPNetwork8,  // "10.0.0.0/8"
 		IPNetwork16, // "54.168.0.0/16"
 		IPNetwork24, // "150.222.10.0/24"
-		IPNetwork32) // "52.93.126.244/32"
-
+		IPNetwork32, // "52.93.126.244/32"
+	)
 	assertContains(t, filter,
 		"10.255.255.254",
 		"54.168.255.255",
 		"150.222.10.255",
-		"52.93.126.244")
+		"52.93.126.244",
+	)
 }
 func TestFindIPv4NonExistentNetwork(t *testing.T) {
 	filter := New(
 		"3.144.0.0/13",
-		"3.5.140.0/22")
-
+		"3.5.140.0/22",
+	)
 	assertNotContains(t, filter,
 		"3.152.0.0",
-		"3.5.144.0")
+		"3.5.144.0",
+	)
 }
 func TestFindIPv4WithCleanAndNonCleanNetwork(t *testing.T) {
 	filter := New(IPNetwork16, "3.144.0.0/13") // 54.168.0.0/16

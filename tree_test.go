@@ -140,12 +140,16 @@ const (
 
 func assertContains(t *testing.T, filter Filter, values ...string) {
 	for _, value := range values {
-		Assert(t).That(filter.Contains(value)).Equals(true)
+		t.Run(value, func(t *testing.T) {
+			Assert(t).That(filter.Contains(value)).Equals(true)
+		})
 	}
 }
 func assertNotContains(t *testing.T, filter Filter, values ...string) {
 	for _, value := range values {
-		Assert(t).That(filter.Contains(value)).Equals(false)
+		t.Run(value, func(t *testing.T) {
+			Assert(t).That(filter.Contains(value)).Equals(false)
+		})
 	}
 }
 
